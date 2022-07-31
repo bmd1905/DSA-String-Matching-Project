@@ -23,54 +23,115 @@ struct infoOutput
     int count;
     vector<Info> foundInfo;
 };
-void Input(fstream &file, int &h, int &w, int &stringNum, string *matchString)
+void Input(fstream &file)
 {
+    // Create variable
+    int h, w, stringNum;
+
+    // Open file to write to
     file.open("input.txt", ios::out);
-    cout << "Input width: ";
-    cin >> w;
-    cout << "Input height: ";
-    cin >> h;
+
+    while (true)
+    {
+        // Input weight and height
+        cout << "Input width: ";
+        cin >> w;
+        cout << "Input height: ";
+        cin >> h;
+
+        // Check input
+        if (w <= 0 || h <= 0)
+        {
+            cout << "Syntax error. Please try again!\n";
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // Write weight and height to file
     file << w << " " << h << endl;
+
+    // Create matrix to store characters
     char **matrixChar;
     matrixChar = new char *[h];
     for (int i = 0; i < h; i++)
     {
         matrixChar[i] = new char[w];
     }
+
+    // Initialize random matrix
     for (int i = 0; i < h; i++)
     {
         for (int j = 0; j < w; j++)
             matrixChar[i][j] = 65 + rand() % 26;
     }
 
+    // Write matrix to file
     for (int i = 0; i < h; i++)
     {
         for (int j = 0; j < w; j++)
             file << matrixChar[i][j] << " ";
         file << endl;
     }
+
+    // Print matrix into screen
     for (int i = 0; i < h; i++)
     {
         for (int j = 0; j < w; j++)
             cout << matrixChar[i][j] << " ";
         cout << endl;
     }
-    cout << "How many strings do you want to enter? >> ";
-    cin >> stringNum;
-    matchString = new string[stringNum];
+    //
+    while (true)
+    {
+        // Input number of string from user
+        cout << "How many strings do you want to enter? >> ";
+        cin >> stringNum;
+
+        // Check input
+        if (stringNum <= 0)
+        {
+            cout << "Syntax error. Please try again!\n";
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    // Create array storing each string from user
+    string *matchString = new string[stringNum];
+    // Input string
     for (int i = 0; i < stringNum; i++)
     {
+        cout << "Enter your " << (i + 1) << " string: ";
         cin >> matchString[i];
     }
+    // Convert string to uppercase and write to file
     for (int i = 0; i < stringNum; i++)
     {
+        // Convert
         for (int j = 0; j < matchString[i].length(); j++)
         {
             matchString[i][j] = toupper(matchString[i][j]);
         }
+        // Write to file
         file << matchString[i] << endl;
     }
+    // Write final signal to end of tile
     file << "#";
+
+    // Delete array
+    for (int i = 0; i < h; i++)
+    {
+        delete matrixChar[i];
+    }
+    delete matchString;
+
     file.close();
 }
 // Algorithms
@@ -326,21 +387,32 @@ void WriteToFile(infoOutput info)
 }
 void Output(fstream &file)
 {
-    file.open("input.txt", ios::in);
+    // Create variable
     string *row, *rowTranspose;
     string firstLine;
     vector<string> matchString;
     infoOutput info;
 
+    // Open file to read
+    file.open("input.txt", ios::in);
+
+    // Read weight and height
     int w, h;
     file >> w;
     file >> h;
-    getline(file, firstLine); // ?
+
+    // Read '\n' character
+    getline(file, firstLine);
+
+    // Initialize matrix
     row = new string[h];
     rowTranspose = new string[w];
+
+    // Read normal matrix (not transpose)
     for (int i = 0; i < h; i++)
         getline(file, row[i]);
 
+    // Delete space character
     for (int i = 0; i < h; i++)
         row[i].erase(remove(row[i].begin(), row[i].end(), ' '), row[i].end());
 
@@ -353,8 +425,14 @@ void Output(fstream &file)
         rowTranspose[i] = temp;
     }
 
+    // Create variable to store strings and push to matchString matrix
+    // until encounter final signal
     string buf;
+
+    // Variable to count number of string
     int matchStringNum = 0;
+
+    // Start to read
     while (getline(file, buf))
     {
         if (buf == "#")
@@ -362,20 +440,28 @@ void Output(fstream &file)
         matchString.push_back(buf);
         matchStringNum++;
     }
+    // Variable to count number of correct string (string that found in the matrix)
     int count = 0;
     int tableSize = INT_MAX;
-    for (int i = 0; i < matchStringNum; i++) // Slide each word from input file
+
+    // Slide each string from matchString
+    for (int i = 0; i < matchStringNum; i++)
     {
+        // Check if find string in the matrix or not
         bool isFound = false;
+
+        // Variable store info (string, position, direction) of each string
+        // in the matchString matrix regardless of not find.
         Info temp;
 
-        // Search with normal matrix
+        // Search with normal matrix (not transpose)
         for (int j = 0; j < h; j++) // Slide each row of normal matrix
         {
             // NaivePatternSearching(matchString[i], row[j], count, j, 0, isFound, temp);
             //  RabinKarpPatternSearching(matchString[i], row[j], count, tableSize, j, 0, isFound, temp);
             KMPPatternSearch(matchString[i], row[j], count, j, 0, isFound, temp);
         }
+
         // Search with transpose matrix
         for (int j = 0; j < w; j++) // Slide each row of transpose matrix
         {
@@ -383,7 +469,10 @@ void Output(fstream &file)
             //  RabinKarpPatternSearching(matchString[i], rowTranspose[j], count, tableSize, j, 1, isFound, temp);
             KMPPatternSearch(matchString[i], rowTranspose[j], count, j, 1, isFound, temp);
         }
+
+        // Assign name of string to word element
         temp.word = matchString[i];
+
         if (isFound == false)
         {
             temp.pos = {0, 0};
@@ -392,23 +481,34 @@ void Output(fstream &file)
             cout << "(" << 0 << ", " << 0 << ")"
                  << " NF\n";
         }
+        // Push to the general variable (contains both finding and not finding)
         info.foundInfo.push_back(temp);
     }
+
+    // Print into screen
     cout << count << endl;
+    // Assign number of correct find to general variable
     info.count = count;
     file.close();
 
+    // Delete
+    delete row, rowTranspose;
+
+    // Write info to output file
     WriteToFile(info);
 }
 
 int main()
 {
-    fstream file;
-    int height, width, stringNum;
-    string *matchString;
     srand((int)time(0));
-    char **matrixChar;
-    Input(file, height, width, stringNum, matchString);
+
+    fstream file;
+
+    // Create matrix
+    Input(file);
+
+    // Find the answer
     Output(file);
+
     return 0;
 }
